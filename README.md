@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+c# Nexus: AI-Powered On-Chain Agent Protocol
 
-## Getting Started
+Nexus is a decentralized protocol that enables **AI Agents** to autonomously manage on-chain assets. It allows users to deposit funds into a non-custodial Vault, which are then managed by whitelisted "Strategist" agents based on off-chain data and logic.
 
-First, run the development server:
+![Nexus UI](https://via.placeholder.com/800x400?text=Nexus+Protocol+Dashboard)
+
+## 🚀 Features
+
+*   **Non-Custodial Vaults**: Users retain ownership of their funds while granting execution permissions to specific agents.
+*   **AI "Strategist" Agents**: Off-chain Python agents that monitor market conditions (e.g., DEX APY) and trigger on-chain transactions.
+*   **Secure Execution Layer**: An on-chain `Execution` contract that verifies agent permissions before interacting with the Vault.
+*   **Modern Dashboard**: A Next.js frontend for seamless user interaction (Wallet connection, Deposits, Real-time monitoring).
+
+## 🛠 Tech Stack
+
+*   **Smart Contracts**: Solidity, Hardhat, OpenZeppelin (Polygon Network).
+*   **Agent**: Python, Web3.py (Off-chain logic).
+*   **Frontend**: Next.js 14 (App Router), TypeScript, Tailwind CSS, Ethers.js v6.
+
+## 📂 Project Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+nexus/
+├── agent/              # Python AI Agent script
+│   ├── agent_zero.py   # Main agent logic (monitors APY)
+│   └── config.json     # Deployed contract addresses
+├── app/                # Next.js Frontend
+│   ├── page.tsx        # Main dashboard UI
+│   └── constants.ts    # Contract ABIs and Addresses
+├── contracts/          # Hardhat Project
+│   ├── contracts/      # Solidity Smart Contracts (Vault, Execution, Registry)
+│   └── scripts/        # Deployment scripts
+└── start_nexus.ps1     # One-click startup script (Windows)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🏁 Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+*   **Node.js** (v18+)
+*   **Python** (v3.10+)
+*   **MetaMask** (Browser Extension)
 
-## Learn More
+### Installation
 
-To learn more about Next.js, take a look at the following resources:
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/yourusername/nexus.git
+    cd nexus
+    ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2.  Install Dependencies:
+    ```bash
+    # Frontend
+    npm install
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+    # Contracts
+    cd contracts
+    npm install
+    cd ..
 
-## Deploy on Vercel
+    # Agent
+    cd agent
+    pip install -r requirements.txt
+    cd ..
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## ⚡ Quick Start (Windows)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+We have provided a PowerShell script to spin up the entire environment (Blockchain Node, Agent, and Frontend) in one go.
+
+1.  Run the startup script:
+    ```powershell
+    .\start_nexus.ps1
+    ```
+    *This will open 3 separate terminal windows.*
+
+2.  **Configure MetaMask**:
+    *   Add a new network: **Localhost 8545**
+    *   RPC URL: `http://127.0.0.1:8545`
+    *   Chain ID: `31337`
+    *   Currency Symbol: `ETH`
+    *   Import a test account using a private key from the "Hardhat Node" terminal window (e.g., Account #2).
+
+3.  **Open the App**:
+    *   Go to `http://localhost:3000`
+
+## 📖 Usage Guide
+
+1.  **Get Funds**:
+    *   Click the **"Mint 1000 USDC"** button in the top right to get test tokens.
+2.  **Deposit**:
+    *   Enter an amount (e.g., `100`) in the "Deposit Funds" section.
+    *   Click **"Deposit to Vault"**. This approves the Vault and deposits the tokens.
+3.  **Watch the Agent**:
+    *   The Agent script (running in the background) monitors the "QuickSwap APY".
+    *   If the simulated APY crosses **15%**, the Agent will automatically trigger a transaction.
+    *   You will see the **"Agent Status"** on the dashboard and logs in the "Recent Activity" section.
+
+## 📜 Smart Contracts
+
+*   **`AgentRegistry.sol`**: Factory contract for deploying/registering new Strategist NFTs.
+*   **`Vault.sol`**: Holds user funds. `deposit()` / `withdraw()`. Only allows the `Execution` contract to call `executeTransaction()`.
+*   **`Execution.sol`**: Whitelists agents and routes their transaction requests to the appropriate Vault.
+
+## 📄 License
+
+MIT
