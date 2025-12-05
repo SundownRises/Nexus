@@ -29,9 +29,12 @@ export interface VaultInterface extends Interface {
       | "deposit"
       | "executeTransaction"
       | "executionContract"
+      | "maxAllocatedPercentage"
+      | "maxSlippage"
       | "owner"
       | "renounceOwnership"
       | "setExecutionContract"
+      | "setRiskParams"
       | "transferOwnership"
       | "withdraw"
   ): FunctionFragment;
@@ -40,6 +43,7 @@ export interface VaultInterface extends Interface {
     nameOrSignatureOrTopic:
       | "Deposited"
       | "OwnershipTransferred"
+      | "RiskParamsUpdated"
       | "StrategyExecuted"
       | "Withdrawn"
   ): EventFragment;
@@ -56,6 +60,14 @@ export interface VaultInterface extends Interface {
     functionFragment: "executionContract",
     values?: undefined
   ): string;
+  encodeFunctionData(
+    functionFragment: "maxAllocatedPercentage",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "maxSlippage",
+    values?: undefined
+  ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "renounceOwnership",
@@ -64,6 +76,10 @@ export interface VaultInterface extends Interface {
   encodeFunctionData(
     functionFragment: "setExecutionContract",
     values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setRiskParams",
+    values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "transferOwnership",
@@ -83,6 +99,14 @@ export interface VaultInterface extends Interface {
     functionFragment: "executionContract",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "maxAllocatedPercentage",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "maxSlippage",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "renounceOwnership",
@@ -90,6 +114,10 @@ export interface VaultInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "setExecutionContract",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setRiskParams",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -123,6 +151,25 @@ export namespace OwnershipTransferredEvent {
   export interface OutputObject {
     previousOwner: string;
     newOwner: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace RiskParamsUpdatedEvent {
+  export type InputTuple = [
+    maxAllocatedPercentage: BigNumberish,
+    maxSlippage: BigNumberish
+  ];
+  export type OutputTuple = [
+    maxAllocatedPercentage: bigint,
+    maxSlippage: bigint
+  ];
+  export interface OutputObject {
+    maxAllocatedPercentage: bigint;
+    maxSlippage: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -218,12 +265,22 @@ export interface Vault extends BaseContract {
 
   executionContract: TypedContractMethod<[], [string], "view">;
 
+  maxAllocatedPercentage: TypedContractMethod<[], [bigint], "view">;
+
+  maxSlippage: TypedContractMethod<[], [bigint], "view">;
+
   owner: TypedContractMethod<[], [string], "view">;
 
   renounceOwnership: TypedContractMethod<[], [void], "nonpayable">;
 
   setExecutionContract: TypedContractMethod<
     [_executionContract: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  setRiskParams: TypedContractMethod<
+    [_maxAllocatedPercentage: BigNumberish, _maxSlippage: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -262,6 +319,12 @@ export interface Vault extends BaseContract {
     nameOrSignature: "executionContract"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
+    nameOrSignature: "maxAllocatedPercentage"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "maxSlippage"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
     nameOrSignature: "owner"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
@@ -271,6 +334,13 @@ export interface Vault extends BaseContract {
     nameOrSignature: "setExecutionContract"
   ): TypedContractMethod<
     [_executionContract: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "setRiskParams"
+  ): TypedContractMethod<
+    [_maxAllocatedPercentage: BigNumberish, _maxSlippage: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -298,6 +368,13 @@ export interface Vault extends BaseContract {
     OwnershipTransferredEvent.InputTuple,
     OwnershipTransferredEvent.OutputTuple,
     OwnershipTransferredEvent.OutputObject
+  >;
+  getEvent(
+    key: "RiskParamsUpdated"
+  ): TypedContractEvent<
+    RiskParamsUpdatedEvent.InputTuple,
+    RiskParamsUpdatedEvent.OutputTuple,
+    RiskParamsUpdatedEvent.OutputObject
   >;
   getEvent(
     key: "StrategyExecuted"
@@ -335,6 +412,17 @@ export interface Vault extends BaseContract {
       OwnershipTransferredEvent.InputTuple,
       OwnershipTransferredEvent.OutputTuple,
       OwnershipTransferredEvent.OutputObject
+    >;
+
+    "RiskParamsUpdated(uint256,uint256)": TypedContractEvent<
+      RiskParamsUpdatedEvent.InputTuple,
+      RiskParamsUpdatedEvent.OutputTuple,
+      RiskParamsUpdatedEvent.OutputObject
+    >;
+    RiskParamsUpdated: TypedContractEvent<
+      RiskParamsUpdatedEvent.InputTuple,
+      RiskParamsUpdatedEvent.OutputTuple,
+      RiskParamsUpdatedEvent.OutputObject
     >;
 
     "StrategyExecuted(address,bytes)": TypedContractEvent<

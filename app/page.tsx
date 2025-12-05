@@ -2,12 +2,14 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { ADDRESSES, ABIS } from "./constants";
-import { Activity, Shield } from "lucide-react";
+import { Activity, Shield, TrendingUp } from "lucide-react";
 import Header from "../components/Header";
 import StatsCard from "../components/StatsCard";
 import ActionCard from "../components/ActionCard";
 import ActivityLog from "../components/ActivityLog";
 import HowItWorks from "../components/HowItWorks";
+import RiskControls from "../components/RiskControls";
+import StrategyCard from "../components/StrategyCard";
 import { useToast } from "../components/ToastProvider";
 
 export default function Home() {
@@ -20,6 +22,45 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const { showToast } = useToast();
+
+  // Strategy State
+  const [strategies, setStrategies] = useState([
+    {
+      id: "quickswap",
+      name: "QuickSwap Yield",
+      apy: "12.5%",
+      risk: "Low" as const,
+      description: "Provides liquidity to QuickSwap USDC/ETH pools to earn trading fees. Auto-compounds rewards daily.",
+      enabled: true,
+    },
+    {
+      id: "arbitrage",
+      name: "Cross-DEX Arbitrage",
+      apy: "Variable",
+      risk: "Medium" as const,
+      description: "Monitors price discrepancies between QuickSwap and SushiSwap. Executes atomic swaps when spread > 1%.",
+      enabled: true,
+    },
+    {
+      id: "aave",
+      name: "Aave Health Monitor",
+      apy: "Safety",
+      risk: "Low" as const,
+      description: "Monitors your Aave V3 health factor. Automatically deposits collateral from Vault if HF drops below 1.1.",
+      enabled: true,
+    },
+  ]);
+
+  const handleStrategyToggle = (id: string) => {
+    setStrategies(prev => prev.map(s => {
+      if (s.id === id) {
+        const newState = !s.enabled;
+        showToast(`${s.name} ${newState ? "Enabled" : "Disabled"}`, newState ? "success" : "info");
+        return { ...s, enabled: newState };
+      }
+      return s;
+    }));
+  };
 
   const connectWallet = async () => {
     if (typeof window !== "undefined" && (window as any).ethereum) {
@@ -241,6 +282,23 @@ export default function Home() {
                 <span className="text-xl text-zinc-500 font-normal ml-2">USDC</span>
               </p>
             </StatsCard>
+
+            {/* Active Strategies */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-accent-primary" />
+                Active Strategies
+              </h3>
+              <div className="grid grid-cols-1 gap-4">
+                {strategies.map(strategy => (
+                  <StrategyCard
+                    key={strategy.id}
+                    {...strategy}
+                    onToggle={handleStrategyToggle}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Right Column: Actions */}
@@ -253,6 +311,7 @@ export default function Home() {
               setDepositAmount={setDepositAmount}
               onDeposit={handleDeposit}
             />
+            <RiskControls />
             <ActivityLog logs={logs} />
           </div>
         </div>

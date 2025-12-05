@@ -6,6 +6,10 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       chainId: 31337,
+      forking: {
+        url: "https://polygon-rpc.com",
+        enabled: true,
+      },
     },
     amoy: {
       url: "https://rpc-amoy.polygon.technology/",

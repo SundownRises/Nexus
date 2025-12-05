@@ -40,6 +40,13 @@ async function main() {
     const tokenAddress = await token.getAddress();
     console.log("MockToken deployed to:", tokenAddress);
 
+    // Deploy PriceConsumer (Oracle)
+    const PriceConsumer = await ethers.getContractFactory("PriceConsumer");
+    const priceConsumer = await PriceConsumer.deploy();
+    await priceConsumer.waitForDeployment();
+    const priceConsumerAddress = await priceConsumer.getAddress();
+    console.log("PriceConsumer deployed to:", priceConsumerAddress);
+
     // Save addresses to agent config
     const configPath = path.join(process.cwd(), "../agent/config.json");
     const config = {
@@ -47,6 +54,7 @@ async function main() {
         execution: executionAddress,
         vault: vaultAddress,
         token: tokenAddress,
+        priceConsumer: priceConsumerAddress,
         rpcUrl: "http://127.0.0.1:8545"
     };
 

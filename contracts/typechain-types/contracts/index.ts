@@ -4,4 +4,5 @@
 export type { AgentRegistry } from "./AgentRegistry";
 export type { Execution } from "./Execution";
 export type { MockERC20 } from "./MockERC20";
+export type { PriceConsumer } from "./PriceConsumer";
 export type { Vault } from "./Vault";

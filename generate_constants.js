@@ -13,19 +13,24 @@ const vaultArtifact = JSON.parse(fs.readFileSync(vaultArtifactPath, 'utf8'));
 const tokenArtifactPath = path.join(__dirname, 'contracts/artifacts/contracts/MockERC20.sol/MockERC20.json');
 const tokenArtifact = JSON.parse(fs.readFileSync(tokenArtifactPath, 'utf8'));
 
+const priceConsumerArtifactPath = path.join(__dirname, 'contracts/artifacts/contracts/PriceConsumer.sol/PriceConsumer.json');
+const priceConsumerArtifact = JSON.parse(fs.readFileSync(priceConsumerArtifactPath, 'utf8'));
+
 const constantsContent = `
 export const ADDRESSES = {
   AGENT_REGISTRY: "${config.agentRegistry}",
   EXECUTION: "${config.execution}",
   VAULT: "${config.vault}",
   TOKEN: "${config.token}",
+  PRICE_CONSUMER: "${config.priceConsumer}",
   RPC_URL: "${config.rpcUrl}"
 };
 
 export const ABIS = {
   EXECUTION: ${JSON.stringify(executionArtifact.abi)},
   VAULT: ${JSON.stringify(vaultArtifact.abi)},
-  TOKEN: ${JSON.stringify(tokenArtifact.abi)}
+  TOKEN: ${JSON.stringify(tokenArtifact.abi)},
+  PRICE_CONSUMER: ${JSON.stringify(priceConsumerArtifact.abi)}
 };
 `;
 

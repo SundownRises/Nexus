@@ -4,4 +4,5 @@
 export { AgentRegistry__factory } from "./AgentRegistry__factory";
 export { Execution__factory } from "./Execution__factory";
 export { MockERC20__factory } from "./MockERC20__factory";
+export { PriceConsumer__factory } from "./PriceConsumer__factory";
 export { Vault__factory } from "./Vault__factory";
