@@ -2,7 +2,13 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { ADDRESSES, ABIS } from "./constants";
-import { Wallet, ArrowRight, Activity, Shield, Zap } from "lucide-react";
+import { Activity, Shield } from "lucide-react";
+import Header from "../components/Header";
+import StatsCard from "../components/StatsCard";
+import ActionCard from "../components/ActionCard";
+import ActivityLog from "../components/ActivityLog";
+import HowItWorks from "../components/HowItWorks";
+import { useToast } from "../components/ToastProvider";
 
 export default function Home() {
   const [account, setAccount] = useState<string | null>(null);
@@ -13,20 +19,65 @@ export default function Home() {
   const [depositAmount, setDepositAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
+  const { showToast } = useToast();
 
   const connectWallet = async () => {
     if (typeof window !== "undefined" && (window as any).ethereum) {
       try {
         await (window as any).ethereum.request({ method: "eth_requestAccounts" });
+
+        // Network Switching Logic
+        const chainId = await (window as any).ethereum.request({ method: "eth_chainId" });
+        const targetChainId = "0x7a69"; // 31337
+
+        if (chainId !== targetChainId) {
+          try {
+            await (window as any).ethereum.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: targetChainId }],
+            });
+          } catch (switchError: any) {
+            if (switchError.code === 4902) {
+              try {
+                await (window as any).ethereum.request({
+                  method: "wallet_addEthereumChain",
+                  params: [
+                    {
+                      chainId: targetChainId,
+                      chainName: "Nexus Localhost",
+                      rpcUrls: ["http://127.0.0.1:8545"],
+                      nativeCurrency: {
+                        name: "ETH",
+                        symbol: "ETH",
+                        decimals: 18,
+                      },
+                    },
+                  ],
+                });
+              } catch (addError) {
+                console.error("Failed to add network:", addError);
+                showToast("Failed to add network", "error");
+                return;
+              }
+            } else {
+              console.error("Failed to switch network:", switchError);
+              showToast("Failed to switch network", "error");
+              return;
+            }
+          }
+        }
+
         const provider = new ethers.BrowserProvider((window as any).ethereum);
         const signer = await provider.getSigner();
         setAccount(await signer.getAddress());
         setProvider(provider);
+        showToast("Wallet connected successfully!", "success");
       } catch (error) {
         console.error(error);
+        showToast("Failed to connect wallet", "error");
       }
     } else {
-      alert("Please install MetaMask!");
+      showToast("Please install MetaMask!", "error");
     }
   };
 
@@ -34,7 +85,6 @@ export default function Home() {
     if (!provider || !account) return;
     try {
       const signer = await provider.getSigner();
-      const vaultContract = new ethers.Contract(ADDRESSES.VAULT, ABIS.VAULT, signer);
       const tokenContract = new ethers.Contract(ADDRESSES.TOKEN, ABIS.TOKEN, signer);
       const executionContract = new ethers.Contract(ADDRESSES.EXECUTION, ABIS.EXECUTION, signer);
 
@@ -74,23 +124,27 @@ export default function Home() {
 
       // Approve
       addLog("Approving tokens...");
+      showToast("Approving tokens...", "info");
       const tx1 = await tokenContract.approve(ADDRESSES.VAULT, amount);
       await tx1.wait();
       addLog("Approval confirmed.");
+      showToast("Approval confirmed!", "success");
 
       // Deposit
       addLog("Depositing into Vault...");
+      showToast("Depositing into Vault...", "info");
       const tx2 = await vaultContract.deposit(ADDRESSES.TOKEN, amount);
       await tx2.wait();
       addLog("Deposit successful!");
+      showToast("Deposit successful!", "success");
 
       setDepositAmount("");
       fetchData();
     } catch (error: any) {
       console.error(error);
-      // Extract readable error message if possible
       const msg = error.reason || error.message || "Transaction failed";
       addLog(`Error: ${msg.slice(0, 50)}...`);
+      showToast("Transaction failed", "error");
     } finally {
       setLoading(false);
     }
@@ -103,13 +157,16 @@ export default function Home() {
       const signer = await provider.getSigner();
       const tokenContract = new ethers.Contract(ADDRESSES.TOKEN, ABIS.TOKEN, signer);
       addLog("Minting 1000 USDC...");
+      showToast("Minting 1000 USDC...", "info");
       const tx = await tokenContract.mint(account, ethers.parseUnits("1000", 18));
       await tx.wait();
       addLog("Minted 1000 USDC!");
+      showToast("Minted 1000 USDC successfully!", "success");
       fetchData();
     } catch (error: any) {
       console.error(error);
       addLog("Mint failed.");
+      showToast("Mint failed", "error");
     } finally {
       setLoading(false);
     }
@@ -120,125 +177,83 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans selection:bg-purple-500/30">
-      {/* Header */}
-      <header className="border-b border-white/10 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">Nexus</span>
-          </div>
-          <div className="flex gap-4">
-            {account && (
-              <button
-                onClick={handleMint}
-                disabled={loading}
-                className="px-4 py-2 bg-zinc-800 text-white rounded-full text-sm font-medium hover:bg-zinc-700 transition-all"
-              >
-                Mint 1000 USDC
-              </button>
-            )}
-            <button
-              onClick={connectWallet}
-              className="flex items-center gap-2 px-5 py-2.5 bg-white text-black rounded-full font-medium hover:bg-gray-200 transition-all active:scale-95"
-            >
-              <Wallet className="w-4 h-4" />
-              {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : "Connect Wallet"}
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen text-foreground font-sans selection:bg-purple-500/30">
+      <Header
+        account={account}
+        loading={loading}
+        onConnect={connectWallet}
+        onMint={handleMint}
+      />
 
       <main className="max-w-7xl mx-auto px-6 py-12">
+        {/* Hero Section */}
+        <div className="mb-16 text-center max-w-3xl mx-auto">
+          <h1 className="text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/40 tracking-tight">
+            Autonomous DeFi Intelligence
+          </h1>
+          <p className="text-lg text-zinc-500 dark:text-zinc-400 leading-relaxed">
+            Deploy capital into an AI-managed vault. Our off-chain agents monitor market conditions 24/7
+            and execute strategies with cryptographic verification.
+          </p>
+        </div>
+
+        <HowItWorks />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Left Column: Stats & Agent */}
           <div className="space-y-8">
-            <div className="p-8 rounded-3xl bg-zinc-900/50 border border-white/5 backdrop-blur-sm">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-green-500/10 rounded-2xl">
-                  <Activity className="w-6 h-6 text-green-500" />
+            <StatsCard
+              title="Agent Status"
+              icon={Activity}
+              iconColor="text-green-500"
+              iconBg="bg-green-500/10"
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className={`w-3 h-3 rounded-full ${agentStatus ? 'bg-green-500' : 'bg-red-500'}`} />
+                  {agentStatus && <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping opacity-75" />}
                 </div>
-                <div>
-                  <h2 className="text-lg font-medium text-zinc-400">Agent Status</h2>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${agentStatus ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-                    <span className="text-2xl font-bold text-white">{agentStatus ? "Active & Monitoring" : "Inactive"}</span>
-                  </div>
-                </div>
+                <span className="text-2xl font-bold tracking-tight">
+                  {agentStatus ? "Active & Monitoring" : "Inactive"}
+                </span>
               </div>
-              <div className="h-px bg-white/5 my-6" />
+              <div className="h-px bg-glass-border my-6" />
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <p className="text-sm text-zinc-500 mb-1">Target Strategy</p>
-                  <p className="text-lg font-medium text-white">QuickSwap Yield</p>
+                  <p className="text-lg font-medium">QuickSwap Yield</p>
                 </div>
                 <div>
                   <p className="text-sm text-zinc-500 mb-1">Trigger Condition</p>
-                  <p className="text-lg font-medium text-white">APY &gt; 15%</p>
+                  <p className="text-lg font-medium font-mono">APY &gt; 15%</p>
                 </div>
               </div>
-            </div>
+            </StatsCard>
 
-            <div className="p-8 rounded-3xl bg-zinc-900/50 border border-white/5 backdrop-blur-sm">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 bg-blue-500/10 rounded-2xl">
-                  <Shield className="w-6 h-6 text-blue-500" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-medium text-zinc-400">Vault Overview</h2>
-                  <p className="text-3xl font-bold text-white">${Number(vaultBalance).toFixed(2)} <span className="text-lg text-zinc-500 font-normal">USDC</span></p>
-                </div>
-              </div>
-            </div>
+            <StatsCard
+              title="Vault Overview"
+              icon={Shield}
+              iconColor="text-blue-500"
+              iconBg="bg-blue-500/10"
+            >
+              <p className="text-4xl font-bold tracking-tight">
+                ${Number(vaultBalance).toFixed(2)}
+                <span className="text-xl text-zinc-500 font-normal ml-2">USDC</span>
+              </p>
+            </StatsCard>
           </div>
 
           {/* Right Column: Actions */}
           <div className="space-y-8">
-            <div className="p-8 rounded-3xl bg-gradient-to-b from-zinc-900 to-black border border-white/10 shadow-2xl">
-              <h2 className="text-2xl font-bold mb-6">Deposit Funds</h2>
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-zinc-400 mb-2">Amount (USDC)</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      value={depositAmount}
-                      onChange={(e) => setDepositAmount(e.target.value)}
-                      className="w-full bg-zinc-900/50 border border-white/10 rounded-xl px-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                      placeholder="0.00"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-zinc-500">
-                      Balance: {Number(userBalance).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleDeposit}
-                  disabled={loading || !account}
-                  className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                >
-                  {loading ? "Processing..." : "Deposit to Vault"}
-                  {!loading && <ArrowRight className="w-5 h-5" />}
-                </button>
-              </div>
-
-              {logs.length > 0 && (
-                <div className="mt-8 pt-6 border-t border-white/10">
-                  <h3 className="text-sm font-medium text-zinc-500 mb-3">Recent Activity</h3>
-                  <div className="space-y-2">
-                    {logs.slice(0, 3).map((log, i) => (
-                      <div key={i} className="text-sm text-zinc-300 flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
-                        {log}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <ActionCard
+              depositAmount={depositAmount}
+              userBalance={userBalance}
+              loading={loading}
+              account={account}
+              setDepositAmount={setDepositAmount}
+              onDeposit={handleDeposit}
+            />
+            <ActivityLog logs={logs} />
           </div>
         </div>
       </main>
